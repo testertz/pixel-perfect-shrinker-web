@@ -50,7 +50,73 @@ const i18nData = {
         'footer.rights': 'All rights reserved',
         'footer.secure': 'Secure',
         'footer.fast': 'Fast',
-        'footer.global': 'Global'
+        'footer.global': 'Global',
+        'nav.home': 'Home',
+        'nav.features': 'Features',
+        'nav.howto': 'How to Use',
+        'nav.history': 'History',
+        'nav.downloads': 'Downloads',
+        'nav.about': 'About',
+        'features.page.title': 'Our Features',
+        'features.page.subtitle': 'Discover what makes PixelShrink the best image compression tool',
+        'features.detailed.secure.title': '100% Secure',
+        'features.detailed.secure.description': 'Your images are processed locally in your browser. No data is sent to our servers.',
+        'features.detailed.fast.title': 'Lightning Fast',
+        'features.detailed.fast.description': 'Advanced algorithms ensure rapid compression without quality loss.',
+        'features.detailed.quality.title': 'Premium Quality',
+        'features.detailed.quality.description': 'Maintain image quality while achieving optimal file sizes.',
+        'features.detailed.formats.title': 'All Formats',
+        'features.detailed.formats.description': 'Support for JPG, PNG, and WebP formats with smart conversion.',
+        'features.detailed.mobile.title': 'Mobile Ready',
+        'features.detailed.mobile.description': 'Fully responsive design that works perfectly on all devices.',
+        'features.detailed.precise.title': 'Precise Control',
+        'features.detailed.precise.description': 'Choose exact target sizes for perfect optimization.',
+        'howto.page.title': 'How to Use PixelShrink',
+        'howto.page.subtitle': 'Follow these simple steps to compress your images',
+        'howto.step1.title': 'Upload Your Images',
+        'howto.step1.description': 'Drag and drop your images or click to browse. Supports JPG, PNG, and WebP up to 50MB each.',
+        'howto.step2.title': 'Choose Target Size',
+        'howto.step2.description': 'Select your desired file size: 100KB for mobile, 500KB for web, or up to 2MB for high quality.',
+        'howto.step3.title': 'Compress Images',
+        'howto.step3.description': 'Our AI automatically optimizes your images to meet the target size while preserving quality.',
+        'howto.step4.title': 'Download Results',
+        'howto.step4.description': 'Download your compressed images individually or all at once in a ZIP file.',
+        'history.page.title': 'Compression History',
+        'history.page.subtitle': 'View your recent image compression activities',
+        'history.clear': 'Clear History',
+        'history.export': 'Export History',
+        'history.empty.title': 'No History Yet',
+        'history.empty.description': 'Start compressing images to see your history here.',
+        'downloads.page.title': 'Downloads',
+        'downloads.page.subtitle': 'Manage and re-download your compressed images',
+        'downloads.all': 'Download All',
+        'downloads.clear': 'Clear Downloads',
+        'downloads.empty.title': 'No Downloads Yet',
+        'downloads.empty.description': 'Compressed images will appear here for easy access.',
+        'about.page.title': 'About PixelShrink',
+        'about.page.subtitle': 'The story behind the smart image compression tool',
+        'about.mission.title': 'Our Mission',
+        'about.mission.description': 'We believe that image compression should be simple, fast, and secure. PixelShrink was created to provide a user-friendly solution that works entirely in your browser, ensuring your privacy while delivering exceptional results.',
+        'about.stats.images': 'Images Compressed',
+        'about.stats.countries': 'Countries Served',
+        'about.stats.satisfaction': 'User Satisfaction',
+        'about.stats.stored': 'Images Stored',
+        'about.technology.title': 'Technology',
+        'about.technology.description': 'Built with modern web technologies, PixelShrink uses advanced algorithms and AI-powered optimization to deliver the best compression results. All processing happens locally in your browser for maximum security and speed.',
+        'about.team.title': 'Built with ❤️',
+        'about.team.description': 'Created by passionate developers who understand the importance of web performance and user privacy.',
+        'footer.howto': 'How to Use',
+        'footer.history': 'History',
+        'footer.downloads': 'Downloads',
+        'footer.resources': 'Resources',
+        'footer.documentation': 'Documentation',
+        'footer.tutorials': 'Tutorials',
+        'footer.community': 'Community',
+        'footer.newsletter': 'Newsletter',
+        'footer.privacy': 'Privacy Policy',
+        'footer.terms': 'Terms of Service',
+        'footer.cookies': 'Cookie Policy',
+        'footer.privacy_badge': 'Privacy First'
     },
     es: {
         'app.title': 'PixelShrink',
@@ -292,12 +358,17 @@ class ImageCompressor {
         this.uploadedImages = [];
         this.compressionQueue = [];
         this.currentLanguage = localStorage.getItem('language') || 'en';
+        this.currentPage = 'home';
+        this.compressionHistory = JSON.parse(localStorage.getItem('compressionHistory')) || [];
+        this.downloadsList = JSON.parse(localStorage.getItem('downloadsList')) || [];
         
         this.initializeElements();
         this.bindEvents();
         this.initializeTheme();
         this.initializeLanguage();
+        this.initializeNavigation();
         this.startStatsAnimation();
+        this.loadPageContent();
     }
 
     initializeElements() {
@@ -313,6 +384,21 @@ class ImageCompressor {
         this.languageBtn = document.getElementById('languageBtn');
         this.languageDropdown = document.getElementById('languageDropdown');
         this.successToast = document.getElementById('successToast');
+        
+        // Navigation elements
+        this.navToggle = document.getElementById('navToggle');
+        this.navMenu = document.getElementById('navMenu');
+        this.navLinks = document.querySelectorAll('.nav-link');
+        this.footerNavLinks = document.querySelectorAll('.footer-nav-link');
+        this.pages = document.querySelectorAll('.page');
+        
+        // Page-specific elements
+        this.historyList = document.getElementById('historyList');
+        this.downloadsGrid = document.getElementById('downloadsGrid');
+        this.clearHistoryBtn = document.getElementById('clearHistoryBtn');
+        this.exportHistoryBtn = document.getElementById('exportHistoryBtn');
+        this.downloadAllBtn = document.getElementById('downloadAllBtn');
+        this.clearDownloadsBtn = document.getElementById('clearDownloadsBtn');
     }
 
     bindEvents() {
@@ -357,6 +443,33 @@ class ImageCompressor {
         
         // Keyboard shortcuts
         document.addEventListener('keydown', this.handleKeyboardShortcuts.bind(this));
+        
+        // Navigation events
+        this.navToggle?.addEventListener('click', this.toggleMobileNav.bind(this));
+        
+        // Navigation links
+        this.navLinks.forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const page = link.dataset.page;
+                if (page) this.navigateToPage(page);
+            });
+        });
+        
+        // Footer navigation links
+        this.footerNavLinks.forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const page = link.dataset.page;
+                if (page) this.navigateToPage(page);
+            });
+        });
+        
+        // Page-specific button events
+        this.clearHistoryBtn?.addEventListener('click', this.clearHistory.bind(this));
+        this.exportHistoryBtn?.addEventListener('click', this.exportHistory.bind(this));
+        this.downloadAllBtn?.addEventListener('click', this.downloadAll.bind(this));
+        this.clearDownloadsBtn?.addEventListener('click', this.clearDownloads.bind(this));
     }
 
     initializeTheme() {
@@ -423,6 +536,20 @@ class ImageCompressor {
         });
     }
 
+    initializeNavigation() {
+        // Set initial page from URL hash or default to home
+        const hash = window.location.hash.slice(1);
+        this.currentPage = hash && ['home', 'features', 'how-to-use', 'history', 'downloads', 'about'].includes(hash) ? hash : 'home';
+        this.navigateToPage(this.currentPage);
+        
+        // Handle browser back/forward
+        window.addEventListener('popstate', () => {
+            const hash = window.location.hash.slice(1);
+            const page = hash && ['home', 'features', 'how-to-use', 'history', 'downloads', 'about'].includes(hash) ? hash : 'home';
+            this.navigateToPage(page, false);
+        });
+    }
+
     startStatsAnimation() {
         // Animate the stats numbers on page load
         const statNumbers = document.querySelectorAll('.stat-number');
@@ -438,6 +565,241 @@ class ImageCompressor {
                 }, index * 200);
             }, 1000);
         });
+    }
+
+    toggleMobileNav() {
+        this.navMenu?.classList.toggle('active');
+        this.navToggle?.classList.toggle('active');
+    }
+
+    navigateToPage(page, updateHistory = true) {
+        if (this.currentPage === page) return;
+        
+        // Hide current page
+        this.pages.forEach(p => p.classList.remove('active'));
+        
+        // Show target page
+        const targetPage = document.getElementById(page + 'Page');
+        if (targetPage) {
+            targetPage.classList.add('active');
+            this.currentPage = page;
+            
+            // Update navigation active state
+            this.navLinks.forEach(link => {
+                link.classList.toggle('active', link.dataset.page === page);
+            });
+            
+            // Update URL hash
+            if (updateHistory) {
+                history.pushState(null, null, `#${page}`);
+            }
+            
+            // Close mobile navigation
+            this.navMenu?.classList.remove('active');
+            this.navToggle?.classList.remove('active');
+            
+            // Show/hide header based on page
+            const header = document.getElementById('heroSection');
+            if (header) {
+                header.style.display = page === 'home' ? 'flex' : 'none';
+            }
+            
+            // Load page-specific content
+            this.loadPageContent();
+        }
+    }
+
+    loadPageContent() {
+        switch (this.currentPage) {
+            case 'history':
+                this.loadHistoryPage();
+                break;
+            case 'downloads':
+                this.loadDownloadsPage();
+                break;
+        }
+    }
+
+    loadHistoryPage() {
+        if (!this.historyList) return;
+        
+        if (this.compressionHistory.length === 0) {
+            this.historyList.innerHTML = `
+                <div class="history-empty">
+                    <div class="empty-icon">📜</div>
+                    <h3 data-i18n="history.empty.title">No History Yet</h3>
+                    <p data-i18n="history.empty.description">Start compressing images to see your history here.</p>
+                </div>
+            `;
+        } else {
+            this.historyList.innerHTML = this.compressionHistory.map(item => `
+                <div class="history-item">
+                    <div class="history-item-header">
+                        <div class="history-item-title">${item.fileName}</div>
+                        <div class="history-item-date">${new Date(item.date).toLocaleString()}</div>
+                    </div>
+                    <div class="history-item-details">
+                        <div class="history-detail">
+                            <span class="history-detail-label">Original Size</span>
+                            <span class="history-detail-value">${this.formatFileSize(item.originalSize)}</span>
+                        </div>
+                        <div class="history-detail">
+                            <span class="history-detail-label">Compressed Size</span>
+                            <span class="history-detail-value">${this.formatFileSize(item.compressedSize)}</span>
+                        </div>
+                        <div class="history-detail">
+                            <span class="history-detail-label">Compression Ratio</span>
+                            <span class="history-detail-value">${item.compressionRatio}%</span>
+                        </div>
+                        <div class="history-detail">
+                            <span class="history-detail-label">Target Size</span>
+                            <span class="history-detail-value">${this.formatFileSize(item.targetSize * 1024)}</span>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        this.updateLanguage(); // Re-apply translations
+    }
+
+    loadDownloadsPage() {
+        if (!this.downloadsGrid) return;
+        
+        if (this.downloadsList.length === 0) {
+            this.downloadsGrid.innerHTML = `
+                <div class="downloads-empty">
+                    <div class="empty-icon">📦</div>
+                    <h3 data-i18n="downloads.empty.title">No Downloads Yet</h3>
+                    <p data-i18n="downloads.empty.description">Compressed images will appear here for easy access.</p>
+                </div>
+            `;
+        } else {
+            this.downloadsGrid.innerHTML = this.downloadsList.map(item => `
+                <div class="image-card">
+                    <img src="${item.dataUrl}" alt="${item.fileName}" class="image-preview">
+                    <div class="image-info">
+                        <div class="image-name">${item.fileName}</div>
+                        <div class="image-details">
+                            <div class="detail-item">
+                                <div class="detail-label">Size</div>
+                                <div class="detail-value">${this.formatFileSize(item.size)}</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">Date</div>
+                                <div class="detail-value">${new Date(item.date).toLocaleDateString()}</div>
+                            </div>
+                        </div>
+                        <button class="download-btn" onclick="imageCompressor.redownloadImage('${item.id}')" style="display: flex;">
+                            📥 Download Again
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        this.updateLanguage(); // Re-apply translations
+    }
+
+    clearHistory() {
+        if (confirm('Are you sure you want to clear all compression history?')) {
+            this.compressionHistory = [];
+            localStorage.setItem('compressionHistory', JSON.stringify(this.compressionHistory));
+            this.loadHistoryPage();
+            this.showToast('History cleared successfully!', 'success');
+        }
+    }
+
+    exportHistory() {
+        if (this.compressionHistory.length === 0) {
+            this.showToast('No history to export!', 'error');
+            return;
+        }
+        
+        const csvContent = [
+            ['File Name', 'Original Size (bytes)', 'Compressed Size (bytes)', 'Compression Ratio (%)', 'Target Size (KB)', 'Date'],
+            ...this.compressionHistory.map(item => [
+                item.fileName,
+                item.originalSize,
+                item.compressedSize,
+                item.compressionRatio,
+                item.targetSize,
+                new Date(item.date).toISOString()
+            ])
+        ].map(row => row.join(',')).join('\n');
+        
+        const blob = new Blob([csvContent], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `pixelshrink-history-${new Date().toISOString().split('T')[0]}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+        
+        this.showToast('History exported successfully!', 'success');
+    }
+
+    downloadAll() {
+        if (this.downloadsList.length === 0) {
+            this.showToast('No images to download!', 'error');
+            return;
+        }
+        
+        // This would require a zip library to implement properly
+        // For now, just show a message
+        this.showToast('Download all feature coming soon!', 'info');
+    }
+
+    clearDownloads() {
+        if (confirm('Are you sure you want to clear all downloaded images?')) {
+            this.downloadsList = [];
+            localStorage.setItem('downloadsList', JSON.stringify(this.downloadsList));
+            this.loadDownloadsPage();
+            this.showToast('Downloads cleared successfully!', 'success');
+        }
+    }
+
+    redownloadImage(id) {
+        const item = this.downloadsList.find(img => img.id === id);
+        if (item) {
+            const a = document.createElement('a');
+            a.href = item.dataUrl;
+            a.download = item.fileName;
+            a.click();
+            this.showToast('Image downloaded!', 'success');
+        }
+    }
+
+    addToHistory(fileName, originalSize, compressedSize, targetSize) {
+        const compressionRatio = Math.round((1 - compressedSize / originalSize) * 100);
+        const historyItem = {
+            fileName,
+            originalSize,
+            compressedSize,
+            compressionRatio,
+            targetSize,
+            date: Date.now()
+        };
+        
+        this.compressionHistory.unshift(historyItem);
+        // Keep only last 50 items
+        this.compressionHistory = this.compressionHistory.slice(0, 50);
+        localStorage.setItem('compressionHistory', JSON.stringify(this.compressionHistory));
+    }
+
+    addToDownloads(fileName, dataUrl, size) {
+        const downloadItem = {
+            id: Date.now().toString(),
+            fileName,
+            dataUrl,
+            size,
+            date: Date.now()
+        };
+        
+        this.downloadsList.unshift(downloadItem);
+        // Keep only last 20 items
+        this.downloadsList = this.downloadsList.slice(0, 20);
+        localStorage.setItem('downloadsList', JSON.stringify(this.downloadsList));
     }
 
     handleKeyboardShortcuts(e) {
