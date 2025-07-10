@@ -1,0 +1,87 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PixelShrink - Smart Image Compression</title>
+    <meta name="description" content="Compress your images to any target size with our smart compression tool. Support for JPG, PNG, and WebP formats.">
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Theme Toggle -->
+    <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode">
+        <span class="sun-icon">☀️</span>
+        <span class="moon-icon">🌙</span>
+    </button>
+
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="logo">
+                <h1>📸 PixelShrink</h1>
+                <p>Smart Image Compression</p>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main">
+        <div class="container">
+            <!-- Upload Section -->
+            <section class="upload-section">
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-content">
+                        <div class="upload-icon">📁</div>
+                        <h2>Drop your images here</h2>
+                        <p>or click to browse files</p>
+                        <div class="supported-formats">
+                            <span>Supports JPG, PNG, WebP</span>
+                        </div>
+                    </div>
+                    <input type="file" id="fileInput" multiple accept="image/jpeg,image/png,image/webp" hidden>
+                </div>
+            </section>
+
+            <!-- Target Size Selection -->
+            <section class="target-size-section" id="targetSizeSection" style="display: none;">
+                <h3>Select Target Size</h3>
+                <div class="size-buttons">
+                    <button class="size-btn" data-size="100">100 KB</button>
+                    <button class="size-btn" data-size="300">300 KB</button>
+                    <button class="size-btn active" data-size="500">500 KB</button>
+                    <button class="size-btn" data-size="1000">1 MB</button>
+                    <button class="size-btn" data-size="2000">2 MB</button>
+                </div>
+            </section>
+
+            <!-- Images Grid -->
+            <section class="images-grid" id="imagesGrid"></section>
+
+            <!-- Error Messages -->
+            <div class="error-message" id="errorMessage" style="display: none;"></div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2024 PixelShrink - Built with ❤️ and vanilla JavaScript</p>
+            <a href="https://github.com" target="_blank" rel="noopener noreferrer">
+                <span>🔗 View on GitHub</span>
+            </a>
+        </div>
+    </footer>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay" style="display: none;">
+        <div class="loading-content">
+            <div class="spinner"></div>
+            <p>Compressing images...</p>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
