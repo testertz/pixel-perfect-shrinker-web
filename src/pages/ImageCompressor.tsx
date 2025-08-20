@@ -192,16 +192,22 @@ const ImageCompressor = () => {
   }, [targetSize, toast]);
 
   const compressImageById = async (imageId: string) => {
-    setImages(prev => prev.map(img => 
-      img.id === imageId ? { ...img, status: 'compressing' } : img
-    ));
+    // Use functional update to get current state
+    let targetImage: CompressedImage | undefined;
+    
+    setImages(prev => {
+      const updated = prev.map(img => 
+        img.id === imageId ? { ...img, status: 'compressing' as const } : img
+      );
+      targetImage = updated.find(img => img.id === imageId);
+      return updated;
+    });
 
-    const image = images.find(img => img.id === imageId);
-    if (!image) return;
+    if (!targetImage) return;
 
     try {
-      const compressedBlob = await compressImage(image.original, targetSize);
-      const compressionRatio = ((image.originalSize - compressedBlob.size) / image.originalSize) * 100;
+      const compressedBlob = await compressImage(targetImage.original, targetSize);
+      const compressionRatio = ((targetImage.originalSize - compressedBlob.size) / targetImage.originalSize) * 100;
       
       setImages(prev => prev.map(img => 
         img.id === imageId ? {
@@ -209,15 +215,15 @@ const ImageCompressor = () => {
           compressed: compressedBlob,
           compressedSize: compressedBlob.size,
           compressionRatio,
-          status: 'completed'
+          status: 'completed' as const
         } : img
       ));
 
       // Add to history
       const historyItem: CompressionHistory = {
         id: imageId,
-        filename: image.original.name,
-        originalSize: image.originalSize,
+        filename: targetImage.original.name,
+        originalSize: targetImage.originalSize,
         compressedSize: compressedBlob.size,
         compressionRatio,
         timestamp: new Date(),
@@ -232,21 +238,21 @@ const ImageCompressor = () => {
 
       toast({
         title: "Compression complete!",
-        description: `${image.original.name} compressed by ${compressionRatio.toFixed(1)}%`,
+        description: `${targetImage.original.name} compressed by ${compressionRatio.toFixed(1)}%`,
       });
 
     } catch (error) {
       setImages(prev => prev.map(img => 
         img.id === imageId ? {
           ...img,
-          status: 'error',
+          status: 'error' as const,
           error: 'Compression failed'
         } : img
       ));
 
       toast({
         title: "Compression failed",
-        description: `Failed to compress ${image.original.name}`,
+        description: `Failed to compress ${targetImage.original.name}`,
         variant: "destructive",
       });
     }
