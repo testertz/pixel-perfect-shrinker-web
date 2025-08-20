@@ -163,7 +163,7 @@
   }
   
   .button-primary {
-    @apply bg-primary text-primary-foreground hover:bg-primary-dark;
+    @apply bg-primary text-primary-foreground hover:opacity-90;
     @apply px-6 py-3 rounded-lg font-semibold transition-all duration-300;
     @apply shadow-lg hover:shadow-xl hover:scale-105;
     background: var(--gradient-primary);

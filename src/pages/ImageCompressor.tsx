@@ -562,11 +562,11 @@ const ImageCompressor = () => {
                             <div>
                               {image.compressedSize ? (
                                 <>Compressed: {formatFileSize(image.compressedSize)}</>
-                              ) : (
-                                <span className="text-yellow-500">Processing...</span>
-                              )}
-                            </div>
-                          </div>
+                               ) : (
+                                 <span className="text-yellow-500">Processing...</span>
+                               )}
+                             </div>
+                           </div>
                           
                           {image.compressionRatio && (
                             <div className="mt-2">
