@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { Upload, Download, Image as ImageIcon, Zap, Shield, Globe, Smartphone, Mail, Monitor, Camera, History, Settings, ChevronDown, Menu, X, Sun, Moon } from 'lucide-react';
+import { Upload, Download, Image as ImageIcon, Zap, Shield, Globe, Smartphone, Mail, Monitor, Camera, History, Settings, ChevronDown, Menu, X, Sun, Moon, AlertCircle, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -7,7 +7,7 @@ import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import ImageCompressionEngine from '@/components/ImageCompressionEngine';
+import ProductionCompressionEngine, { CompressionProgress } from '@/components/ProductionCompressionEngine';
 
 interface CompressedImage {
   id: string;
@@ -20,6 +20,7 @@ interface CompressedImage {
   targetSize: number;
   preview: string;
   error?: string;
+  progress?: CompressionProgress;
 }
 
 interface CompressionHistory {
@@ -42,8 +43,9 @@ const ImageCompressor = () => {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const engineRef = useRef(new ImageCompressionEngine());
+  const engineRef = useRef(new ProductionCompressionEngine());
   const { toast } = useToast();
+
   // Theme handling
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme');
@@ -80,31 +82,11 @@ const ImageCompressor = () => {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
-  const compressImage = async (file: File, targetSizeKB: number): Promise<Blob> => {
-    // Fast path: already under target (allow 5% headroom)
-    if (file.size / 1024 <= targetSizeKB * 1.05) {
-      return file;
-    }
-
-    const engine = engineRef.current;
-    const format = engine.detectOptimalFormat(file);
-
-    const result = await engine.compressImage(file, {
-      targetSizeKB,
-      maxWidth: 2048,
-      maxHeight: 2048,
-      format,
-      progressive: true,
-    });
-
-    return result.blob;
-  };
-
   const handleFileSelect = useCallback((files: FileList) => {
     const fileArray = Array.from(files);
     const validFiles = fileArray.filter(file => {
       const isValidType = file.type.startsWith('image/');
-      const isValidSize = file.size <= 50 * 1024 * 1024; // 50MB
+      const isValidSize = file.size <= 100 * 1024 * 1024; // 100MB
       
       if (!isValidType) {
         toast({
@@ -117,7 +99,7 @@ const ImageCompressor = () => {
       if (!isValidSize) {
         toast({
           title: "File too large",
-          description: `${file.name} exceeds 50MB limit`,
+          description: `${file.name} exceeds 100MB limit`,
           variant: "destructive",
         });
       }
@@ -136,74 +118,122 @@ const ImageCompressor = () => {
 
     setImages(prev => [...prev, ...newImages]);
     
-    // Auto-compress
-    newImages.forEach(image => compressImageById(image.id));
+    // Auto-compress each image
+    newImages.forEach(image => {
+      compressImageById(image.id);
+    });
   }, [targetSize, toast]);
 
   const compressImageById = async (imageId: string) => {
-    // Use functional update to get current state
-    let targetImage: CompressedImage | undefined;
+    console.log('Starting compression for image ID:', imageId);
     
-    setImages(prev => {
-      const updated = prev.map(img => 
-        img.id === imageId ? { ...img, status: 'compressing' as const } : img
-      );
-      targetImage = updated.find(img => img.id === imageId);
-      return updated;
-    });
+    // Find the image
+    const image = images.find(img => img.id === imageId);
+    if (!image) {
+      console.error('Image not found for ID:', imageId);
+      return;
+    }
 
-    if (!targetImage) return;
+    // Update status to compressing
+    setImages(prev => prev.map(img => 
+      img.id === imageId ? { ...img, status: 'compressing' as const } : img
+    ));
+
+    setIsCompressing(true);
 
     try {
-      const compressedBlob = await compressImage(targetImage.original, targetSize);
-      const compressionRatio = ((targetImage.originalSize - compressedBlob.size) / targetImage.originalSize) * 100;
+      const engine = engineRef.current;
       
-      setImages(prev => prev.map(img => 
-        img.id === imageId ? {
-          ...img,
-          compressed: compressedBlob,
-          compressedSize: compressedBlob.size,
-          compressionRatio,
-          status: 'completed' as const
-        } : img
-      ));
+      const result = await engine.compressImage(
+        image.original,
+        {
+          targetSizeKB: targetSize,
+          maxWidth: 2048,
+          maxHeight: 2048,
+          progressive: true,
+        },
+        (progress) => {
+          // Update progress in real-time
+          setImages(prev => prev.map(img => 
+            img.id === imageId ? { ...img, progress } : img
+          ));
+        }
+      );
 
-      // Add to history
-      const historyItem: CompressionHistory = {
-        id: imageId,
-        filename: targetImage.original.name,
-        originalSize: targetImage.originalSize,
-        compressedSize: compressedBlob.size,
-        compressionRatio,
-        timestamp: new Date(),
-        targetSize: targetSize,
-      };
-      
-      setCompressionHistory(prev => {
-        const newHistory = [historyItem, ...prev].slice(0, 100); // Keep last 100
-        localStorage.setItem('pixelshrink-history', JSON.stringify(newHistory));
-        return newHistory;
-      });
+      console.log('Compression result:', result);
 
-      toast({
-        title: "Compression complete!",
-        description: `${targetImage.original.name} compressed by ${compressionRatio.toFixed(1)}%`,
-      });
+      if (result.success && result.blob) {
+        // Update with successful result
+        setImages(prev => prev.map(img => 
+          img.id === imageId ? {
+            ...img,
+            compressed: result.blob,
+            compressedSize: result.compressedSize,
+            compressionRatio: result.compressionRatio,
+            status: 'completed' as const,
+            progress: undefined
+          } : img
+        ));
+
+        // Add to history
+        const historyItem: CompressionHistory = {
+          id: imageId,
+          filename: image.original.name,
+          originalSize: image.originalSize,
+          compressedSize: result.compressedSize,
+          compressionRatio: result.compressionRatio,
+          timestamp: new Date(),
+          targetSize: targetSize,
+        };
+        
+        setCompressionHistory(prev => {
+          const newHistory = [historyItem, ...prev].slice(0, 100);
+          localStorage.setItem('pixelshrink-history', JSON.stringify(newHistory));
+          return newHistory;
+        });
+
+        toast({
+          title: "Compression successful!",
+          description: `${image.original.name} compressed by ${result.compressionRatio.toFixed(1)}%`,
+        });
+
+      } else {
+        // Handle compression failure
+        setImages(prev => prev.map(img => 
+          img.id === imageId ? {
+            ...img,
+            status: 'error' as const,
+            error: result.error || 'Compression failed',
+            progress: undefined
+          } : img
+        ));
+
+        toast({
+          title: "Compression failed",
+          description: result.error || `Failed to compress ${image.original.name}`,
+          variant: "destructive",
+        });
+      }
 
     } catch (error) {
+      console.error('Compression error for image:', imageId, error);
+      
       setImages(prev => prev.map(img => 
         img.id === imageId ? {
           ...img,
           status: 'error' as const,
-          error: 'Compression failed'
+          error: error instanceof Error ? error.message : 'Unknown error',
+          progress: undefined
         } : img
       ));
 
       toast({
-        title: "Compression failed",
-        description: `Failed to compress ${targetImage.original.name}`,
+        title: "Compression error",
+        description: `An error occurred while compressing ${image.original.name}`,
         variant: "destructive",
       });
+    } finally {
+      setIsCompressing(false);
     }
   };
 
@@ -218,6 +248,11 @@ const ImageCompressor = () => {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+
+    toast({
+      title: "Download started",
+      description: `Downloading ${image.original.name}`,
+    });
   };
 
   const downloadAllImages = () => {
@@ -232,9 +267,12 @@ const ImageCompressor = () => {
       return;
     }
 
-    // Create and download ZIP file logic would go here
-    // For now, download individually
     completedImages.forEach(image => downloadImage(image));
+    
+    toast({
+      title: "Downloading all images",
+      description: `Starting download of ${completedImages.length} compressed images`,
+    });
   };
 
   const handleDrag = useCallback((e: React.DragEvent) => {
@@ -449,8 +487,9 @@ const ImageCompressor = () => {
                       <Button
                         onClick={() => fileInputRef.current?.click()}
                         className="button-primary"
+                        disabled={isCompressing}
                       >
-                        Select Images
+                        {isCompressing ? 'Compressing...' : 'Select Images'}
                       </Button>
                     </div>
                     
@@ -463,7 +502,7 @@ const ImageCompressor = () => {
                     </div>
                     
                     <p className="text-sm text-muted-foreground">
-                      Maximum file size: 50MB per image
+                      Maximum file size: 100MB per image
                     </p>
                   </div>
                 </div>
@@ -501,8 +540,33 @@ const ImageCompressor = () => {
                           />
                           
                           {image.status === 'compressing' && (
-                            <div className="absolute inset-0 glass flex items-center justify-center">
-                              <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full"></div>
+                            <div className="absolute inset-0 glass flex flex-col items-center justify-center">
+                              <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full mb-2"></div>
+                              {image.progress && (
+                                <div className="text-center">
+                                  <div className="text-sm font-medium text-white mb-1">
+                                    {image.progress.message}
+                                  </div>
+                                  <div className="w-32 bg-black/20 rounded-full h-2">
+                                    <div 
+                                      className="bg-primary h-2 rounded-full transition-all duration-300"
+                                      style={{ width: `${image.progress.progress}%` }}
+                                    />
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          {image.status === 'completed' && (
+                            <div className="absolute top-2 right-2">
+                              <CheckCircle className="w-6 h-6 text-green-500 bg-white rounded-full" />
+                            </div>
+                          )}
+
+                          {image.status === 'error' && (
+                            <div className="absolute top-2 right-2">
+                              <AlertCircle className="w-6 h-6 text-red-500 bg-white rounded-full" />
                             </div>
                           )}
                         </div>
@@ -517,13 +581,17 @@ const ImageCompressor = () => {
                             <div>
                               {image.compressedSize ? (
                                 <>Compressed: {formatFileSize(image.compressedSize)}</>
-                               ) : (
+                               ) : image.status === 'compressing' ? (
                                  <span className="text-yellow-500">Processing...</span>
+                               ) : image.status === 'error' ? (
+                                 <span className="text-red-500">Failed</span>
+                               ) : (
+                                 <span className="text-gray-500">Pending...</span>
                                )}
                              </div>
                            </div>
                           
-                          {image.compressionRatio && (
+                          {image.compressionRatio !== undefined && image.compressionRatio >= 0 && (
                             <div className="mt-2">
                               <div className="flex justify-between text-sm mb-1">
                                 <span>Compression:</span>
@@ -535,7 +603,7 @@ const ImageCompressor = () => {
                             </div>
                           )}
                           
-                          {image.status === 'completed' && (
+                          {image.status === 'completed' && image.compressed && (
                             <Button
                               onClick={() => downloadImage(image)}
                               className="w-full mt-3 button-primary"
@@ -547,8 +615,18 @@ const ImageCompressor = () => {
                           )}
                           
                           {image.status === 'error' && (
-                            <div className="text-red-500 text-sm mt-2">
-                              {image.error || 'Compression failed'}
+                            <div className="mt-2">
+                              <div className="text-red-500 text-sm mb-2">
+                                {image.error || 'Compression failed'}
+                              </div>
+                              <Button
+                                onClick={() => compressImageById(image.id)}
+                                variant="outline"
+                                size="sm"
+                                className="w-full"
+                              >
+                                Retry Compression
+                              </Button>
                             </div>
                           )}
                         </div>
