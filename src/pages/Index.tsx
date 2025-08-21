@@ -18,38 +18,41 @@ import { Link } from "react-router-dom";
 import Layout from "@/components/Layout";
 import FeatureShowcase from "@/components/FeatureShowcase";
 import CompressionStats from "@/components/CompressionStats";
+import { useLanguage } from "@/hooks/useLanguage";
 
 const Index = () => {
+  const { t } = useLanguage();
+  
   const features = [
     {
       icon: Zap,
-      title: "Lightning Fast",
-      description: "Process images in milliseconds with our optimized compression engine. No waiting, just results."
+      title: t.lightningFast,
+      description: t.lightningFastDesc
     },
     {
       icon: Shield,
-      title: "100% Secure",
-      description: "All processing happens locally in your browser. Your images never leave your device."
+      title: t.secure,
+      description: t.secureDesc
     },
     {
       icon: BarChart3,
-      title: "Smart Analytics",
-      description: "Track compression ratios, file sizes, and optimization metrics in real-time."
+      title: t.smartAnalytics,
+      description: t.smartAnalyticsDesc
     },
     {
       icon: Download,
-      title: "Batch Processing",
-      description: "Compress multiple images simultaneously and download them all at once."
+      title: t.batchProcessing,
+      description: t.batchProcessingDesc
     },
     {
       icon: Users,
-      title: "Developer Friendly",
-      description: "Perfect for web developers, designers, and content creators who need reliable compression."
+      title: t.developerFriendly,
+      description: t.developerFriendlyDesc
     },
     {
       icon: Clock,
-      title: "Always Available",
-      description: "No server dependencies. Works offline and processes images instantly, anytime."
+      title: t.alwaysAvailable,
+      description: t.alwaysAvailableDesc
     }
   ];
 
@@ -61,29 +64,27 @@ const Index = () => {
         <div className="relative max-w-7xl mx-auto text-center">
           <Badge variant="secondary" className="mb-6 bg-primary/10 text-primary border-primary/20">
             <Sparkles className="w-4 h-4 mr-2" />
-            World's Most Advanced Image Compressor
+            {t.heroSubtitle}
           </Badge>
           
           <h1 className="text-3xl sm:text-4xl md:text-6xl lg:text-7xl font-bold mb-6 leading-tight">
-            Compress Images with
-            <span className="text-gradient block">AI Precision</span>
+            <span className="text-gradient block">{t.heroTitle}</span>
           </h1>
           
           <p className="text-lg sm:text-xl text-muted-foreground mb-8 max-w-3xl mx-auto leading-relaxed px-4">
-            Reduce image file sizes by up to 90% while maintaining exceptional quality. 
-            Our advanced algorithms ensure your images look perfect across all devices.
+            {t.heroDescription}
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12 px-4">
             <Link to="/compressor">
               <Button size="lg" className="button-primary group w-full sm:w-auto">
-                Start Compressing
+                {t.startCompressing}
                 <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
               </Button>
             </Link>
             <Button size="lg" variant="outline" className="button-glass w-full sm:w-auto">
               <Download className="w-5 h-5 mr-2" />
-              View Demo
+              {t.viewDemo}
             </Button>
           </div>
           
@@ -102,10 +103,10 @@ const Index = () => {
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-12 sm:mb-16">
             <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4">
-              Why Choose <span className="text-gradient">PixelShrink</span>?
+              {t.whyChoose}
             </h2>
             <p className="text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto px-4">
-              Cutting-edge technology meets user-friendly design for the ultimate compression experience.
+              {t.whyChooseDescription}
             </p>
           </div>
           
@@ -134,15 +135,14 @@ const Index = () => {
         <div className="max-w-4xl mx-auto text-center">
           <div className="glass-card p-6 sm:p-12">
             <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-6">
-              Ready to Optimize Your Images?
+              {t.ctaTitle}
             </h2>
             <p className="text-base sm:text-lg text-muted-foreground mb-8 px-4">
-              Join thousands of developers and designers who trust PixelShrink 
-              for their image optimization needs.
+              {t.ctaDescription}
             </p>
             <Link to="/compressor">
               <Button size="lg" className="button-primary group w-full sm:w-auto">
-                Get Started Now
+                {t.getStartedNow}
                 <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
               </Button>
             </Link>

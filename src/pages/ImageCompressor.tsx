@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import ProductionCompressionEngine, { CompressionProgress } from '@/components/ProductionCompressionEngine';
+import { useLanguage } from '@/hooks/useLanguage';
 
 interface CompressedImage {
   id: string;
@@ -45,6 +46,7 @@ const ImageCompressor = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const engineRef = useRef(new ProductionCompressionEngine());
   const { toast } = useToast();
+  const { t } = useLanguage();
 
   // Theme handling
   useEffect(() => {
@@ -297,10 +299,10 @@ const ImageCompressor = () => {
   ];
 
   const navigation = [
-    { id: 'compress', label: 'Compress', icon: Zap },
-    { id: 'history', label: 'History', icon: History },
-    { id: 'features', label: 'Features', icon: Shield },
-    { id: 'about', label: 'About', icon: Settings },
+    { id: 'compress', label: t.compress, icon: Zap },
+    { id: 'history', label: t.history, icon: History },
+    { id: 'features', label: t.features, icon: Shield },
+    { id: 'about', label: t.about, icon: Settings },
   ];
 
   const stats = [
@@ -474,15 +476,15 @@ const ImageCompressor = () => {
                     </div>
                     
                     <div>
-                      <h3 className="text-2xl font-semibold mb-2">Drop your images here</h3>
-                      <p className="text-muted-foreground mb-4">or click to browse files</p>
+                      <h3 className="text-2xl font-semibold mb-2">{t.dragDropImages}</h3>
+                      <p className="text-muted-foreground mb-4">{t.orClickToSelect}</p>
                       
                       <Button
                         onClick={() => fileInputRef.current?.click()}
                         className="button-primary"
                         disabled={isCompressing}
                       >
-                        {isCompressing ? 'Compressing...' : 'Select Images'}
+                        {isCompressing ? t.compressing : 'Select Images'}
                       </Button>
                     </div>
                     
@@ -515,10 +517,10 @@ const ImageCompressor = () => {
             {images.length > 0 && (
               <Card className="glass-card">
                 <CardHeader className="flex flex-row items-center justify-between">
-                  <CardTitle>Compression Results</CardTitle>
+                  <CardTitle>{t.uploadedImages}</CardTitle>
                   <Button onClick={downloadAllImages} className="button-primary">
                     <Download className="w-4 h-4 mr-2" />
-                    Download All
+                    {t.downloadAll}
                   </Button>
                 </CardHeader>
                 <CardContent>
@@ -570,16 +572,16 @@ const ImageCompressor = () => {
                           </h4>
                           
                           <div className="grid grid-cols-2 gap-2 text-sm text-muted-foreground mt-2">
-                            <div>Original: {formatFileSize(image.originalSize)}</div>
+                            <div>{t.originalSize}: {formatFileSize(image.originalSize)}</div>
                             <div>
                               {image.compressedSize ? (
-                                <>Compressed: {formatFileSize(image.compressedSize)}</>
+                                <>{t.compressedSize}: {formatFileSize(image.compressedSize)}</>
                                ) : image.status === 'compressing' ? (
-                                 <span className="text-yellow-500">Processing...</span>
+                                 <span className="text-yellow-500">{t.compressing}</span>
                                ) : image.status === 'error' ? (
-                                 <span className="text-red-500">Failed</span>
+                                 <span className="text-red-500">{t.error}</span>
                                ) : (
-                                 <span className="text-gray-500">Pending...</span>
+                                 <span className="text-gray-500">{t.loading}</span>
                                )}
                              </div>
                            </div>
@@ -589,7 +591,7 @@ const ImageCompressor = () => {
                               <div className="flex justify-between text-sm mb-1">
                                 <span>Compression:</span>
                                 <span className="text-green-500 font-semibold">
-                                  {image.compressionRatio.toFixed(1)}% saved
+                                  {image.compressionRatio.toFixed(1)}% {t.saved}
                                 </span>
                               </div>
                               <Progress value={image.compressionRatio} className="h-2" />
@@ -603,7 +605,7 @@ const ImageCompressor = () => {
                               size="sm"
                             >
                               <Download className="w-4 h-4 mr-2" />
-                              Download
+                              {t.download}
                             </Button>
                           )}
                           
@@ -618,7 +620,7 @@ const ImageCompressor = () => {
                                 size="sm"
                                 className="w-full"
                               >
-                                Retry Compression
+                                {t.retry}
                               </Button>
                             </div>
                           )}
