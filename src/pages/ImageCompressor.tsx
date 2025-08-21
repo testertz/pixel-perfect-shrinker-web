@@ -118,25 +118,18 @@ const ImageCompressor = () => {
 
     setImages(prev => [...prev, ...newImages]);
     
-    // Auto-compress each image
+    // Auto-compress each image using the actual image objects
     newImages.forEach(image => {
-      compressImageById(image.id);
+      compressImage(image);
     });
   }, [targetSize, toast]);
 
-  const compressImageById = async (imageId: string) => {
-    console.log('Starting compression for image ID:', imageId);
+  const compressImage = async (image: CompressedImage) => {
+    console.log('Starting compression for:', image.original.name);
     
-    // Find the image
-    const image = images.find(img => img.id === imageId);
-    if (!image) {
-      console.error('Image not found for ID:', imageId);
-      return;
-    }
-
     // Update status to compressing
     setImages(prev => prev.map(img => 
-      img.id === imageId ? { ...img, status: 'compressing' as const } : img
+      img.id === image.id ? { ...img, status: 'compressing' as const } : img
     ));
 
     setIsCompressing(true);
@@ -147,7 +140,7 @@ const ImageCompressor = () => {
       const result = await engine.compressImage(
         image.original,
         {
-          targetSizeKB: targetSize,
+          targetSizeKB: image.targetSize,
           maxWidth: 2048,
           maxHeight: 2048,
           progressive: true,
@@ -155,7 +148,7 @@ const ImageCompressor = () => {
         (progress) => {
           // Update progress in real-time
           setImages(prev => prev.map(img => 
-            img.id === imageId ? { ...img, progress } : img
+            img.id === image.id ? { ...img, progress } : img
           ));
         }
       );
@@ -165,7 +158,7 @@ const ImageCompressor = () => {
       if (result.success && result.blob) {
         // Update with successful result
         setImages(prev => prev.map(img => 
-          img.id === imageId ? {
+          img.id === image.id ? {
             ...img,
             compressed: result.blob,
             compressedSize: result.compressedSize,
@@ -177,13 +170,13 @@ const ImageCompressor = () => {
 
         // Add to history
         const historyItem: CompressionHistory = {
-          id: imageId,
+          id: image.id,
           filename: image.original.name,
           originalSize: image.originalSize,
           compressedSize: result.compressedSize,
           compressionRatio: result.compressionRatio,
           timestamp: new Date(),
-          targetSize: targetSize,
+          targetSize: image.targetSize,
         };
         
         setCompressionHistory(prev => {
@@ -200,7 +193,7 @@ const ImageCompressor = () => {
       } else {
         // Handle compression failure
         setImages(prev => prev.map(img => 
-          img.id === imageId ? {
+          img.id === image.id ? {
             ...img,
             status: 'error' as const,
             error: result.error || 'Compression failed',
@@ -216,10 +209,10 @@ const ImageCompressor = () => {
       }
 
     } catch (error) {
-      console.error('Compression error for image:', imageId, error);
+      console.error('Compression error for image:', image.id, error);
       
       setImages(prev => prev.map(img => 
-        img.id === imageId ? {
+        img.id === image.id ? {
           ...img,
           status: 'error' as const,
           error: error instanceof Error ? error.message : 'Unknown error',
@@ -620,7 +613,7 @@ const ImageCompressor = () => {
                                 {image.error || 'Compression failed'}
                               </div>
                               <Button
-                                onClick={() => compressImageById(image.id)}
+                                onClick={() => compressImage(image)}
                                 variant="outline"
                                 size="sm"
                                 className="w-full"
