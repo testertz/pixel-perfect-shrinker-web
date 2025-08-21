@@ -7,6 +7,7 @@ import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import ImageCompressionEngine from '@/components/ImageCompressionEngine';
 
 interface CompressedImage {
   id: string;
@@ -41,8 +42,8 @@ const ImageCompressor = () => {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const engineRef = useRef(new ImageCompressionEngine());
   const { toast } = useToast();
-
   // Theme handling
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme');
@@ -80,75 +81,23 @@ const ImageCompressor = () => {
   };
 
   const compressImage = async (file: File, targetSizeKB: number): Promise<Blob> => {
-    return new Promise((resolve, reject) => {
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-      const img = new Image();
-      
-      img.onload = () => {
-        // Calculate optimal dimensions
-        const maxDimension = 2048;
-        let { width, height } = img;
-        
-        if (width > maxDimension || height > maxDimension) {
-          if (width > height) {
-            height = (height * maxDimension) / width;
-            width = maxDimension;
-          } else {
-            width = (width * maxDimension) / height;
-            height = maxDimension;
-          }
-        }
-        
-        canvas.width = width;
-        canvas.height = height;
-        
-        ctx?.drawImage(img, 0, 0, width, height);
-        
-        // Binary search for optimal quality
-        let minQuality = 0.1;
-        let maxQuality = 0.95;
-        let bestBlob: Blob | null = null;
-        
-        const tryCompress = (quality: number): Promise<Blob> => {
-          return new Promise((resolve) => {
-            canvas.toBlob((blob) => {
-              resolve(blob!);
-            }, 'image/jpeg', quality);
-          });
-        };
-        
-        const findOptimalQuality = async () => {
-          let iterations = 0;
-          const maxIterations = 10;
-          
-          while (iterations < maxIterations && maxQuality - minQuality > 0.01) {
-            const midQuality = (minQuality + maxQuality) / 2;
-            const blob = await tryCompress(midQuality);
-            const sizeKB = blob.size / 1024;
-            
-            if (sizeKB <= targetSizeKB) {
-              bestBlob = blob;
-              minQuality = midQuality;
-            } else {
-              maxQuality = midQuality;
-            }
-            iterations++;
-          }
-          
-          if (!bestBlob) {
-            bestBlob = await tryCompress(minQuality);
-          }
-          
-          resolve(bestBlob);
-        };
-        
-        findOptimalQuality();
-      };
-      
-      img.onerror = () => reject(new Error('Failed to load image'));
-      img.src = URL.createObjectURL(file);
+    // Fast path: already under target (allow 5% headroom)
+    if (file.size / 1024 <= targetSizeKB * 1.05) {
+      return file;
+    }
+
+    const engine = engineRef.current;
+    const format = engine.detectOptimalFormat(file);
+
+    const result = await engine.compressImage(file, {
+      targetSizeKB,
+      maxWidth: 2048,
+      maxHeight: 2048,
+      format,
+      progressive: true,
     });
+
+    return result.blob;
   };
 
   const handleFileSelect = useCallback((files: FileList) => {
