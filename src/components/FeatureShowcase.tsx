@@ -2,80 +2,83 @@ import React from 'react';
 import { Shield, Zap, Globe, Smartphone, Download, History, Settings, Image, Award, Users } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { useLanguage } from '@/hooks/useLanguage';
 
 const FeatureShowcase = () => {
+  const { t } = useLanguage();
+  
   const features = [
     {
       icon: Shield,
-      title: "100% Client-Side Processing",
-      description: "Your images never leave your device. All compression happens locally in your browser for maximum privacy and security.",
+      title: t.clientSideProcessing,
+      description: t.clientSideProcessingDesc,
       color: "text-green-500",
       gradient: "from-green-500/20 to-emerald-500/20"
     },
     {
       icon: Zap,
-      title: "AI-Powered Optimization",
-      description: "Advanced algorithms automatically detect optimal compression settings for each image type and use case.",
+      title: t.aiPoweredOptimization,
+      description: t.aiPoweredOptimizationDesc,
       color: "text-blue-500",
       gradient: "from-blue-500/20 to-cyan-500/20"
     },
     {
       icon: Globe,
-      title: "Universal Format Support",
-      description: "Support for JPG, PNG, WebP with smart format conversion for optimal file sizes and compatibility.",
+      title: t.universalFormatSupport,
+      description: t.universalFormatSupportDesc,
       color: "text-purple-500",
       gradient: "from-purple-500/20 to-violet-500/20"
     },
     {
       icon: Smartphone,
-      title: "Multi-Platform Optimization",
-      description: "Preset optimization profiles for mobile apps, web, email, social media, and print applications.",
+      title: t.multiPlatformOptimization,
+      description: t.multiPlatformOptimizationDesc,
       color: "text-orange-500",
       gradient: "from-orange-500/20 to-red-500/20"
     },
     {
       icon: Download,
-      title: "Batch Processing & Export",
-      description: "Process multiple images simultaneously with bulk download options and ZIP archive creation.",
+      title: t.batchProcessingExport,
+      description: t.batchProcessingExportDesc,
       color: "text-pink-500",
       gradient: "from-pink-500/20 to-rose-500/20"
     },
     {
       icon: History,
-      title: "Smart History Tracking",
-      description: "Track compression statistics, monitor data savings, and maintain a history of all processed images.",
+      title: t.smartHistoryTracking,
+      description: t.smartHistoryTrackingDesc,
       color: "text-indigo-500",
       gradient: "from-indigo-500/20 to-blue-500/20"
     }
   ];
 
   const stats = [
-    { icon: Image, label: "Images Processed", value: "50M+", color: "text-blue-500" },
-    { icon: Users, label: "Global Users", value: "2M+", color: "text-green-500" },
-    { icon: Globe, label: "Countries", value: "195", color: "text-purple-500" },
-    { icon: Award, label: "Data Saved", value: "2.5TB", color: "text-orange-500" },
+    { icon: Image, label: t.imagesProcessed, value: "50M+", color: "text-blue-500" },
+    { icon: Users, label: t.globalUsers, value: "2M+", color: "text-green-500" },
+    { icon: Globe, label: t.countries, value: "195", color: "text-purple-500" },
+    { icon: Award, label: t.dataSaved, value: "2.5TB", color: "text-orange-500" },
   ];
 
   const useCases = [
     {
-      title: "Web Developers",
-      description: "Optimize images for faster website loading and better SEO scores",
-      benefits: ["Improved page speed", "Better user experience", "Higher search rankings"]
+      title: t.webDevelopers,
+      description: t.webDevelopersDesc,
+      benefits: [t.improvedPageSpeed, t.betterUserExperience, t.higherSearchRankings]
     },
     {
-      title: "Mobile App Developers",
-      description: "Reduce app size and improve performance with optimized assets",
-      benefits: ["Smaller app bundles", "Faster loading", "Better performance"]
+      title: t.mobileAppDevelopers,
+      description: t.mobileAppDevelopersDesc,
+      benefits: [t.smallerAppBundles, t.fasterLoading, t.betterPerformance]
     },
     {
-      title: "Social Media Managers",
-      description: "Perfect images for all social platforms with optimal file sizes",
-      benefits: ["Platform compliance", "Faster uploads", "Professional quality"]
+      title: t.socialMediaManagers,
+      description: t.socialMediaManagersDesc,
+      benefits: [t.platformCompliance, t.fasterUploads, t.professionalQuality]
     },
     {
-      title: "E-commerce Stores",
-      description: "Optimize product images for better conversion and loading speed",
-      benefits: ["Faster product pages", "Better conversion", "Reduced bandwidth"]
+      title: t.ecommerceStores,
+      description: t.ecommerceStoresDesc,
+      benefits: [t.fasterProductPages, t.betterConversion, t.reducedBandwidth]
     }
   ];
 
@@ -101,10 +104,10 @@ const FeatureShowcase = () => {
       <div>
         <div className="text-center mb-12">
           <h2 className="text-3xl font-bold text-gradient mb-4">
-            Enterprise-Grade Features
+            {t.enterpriseFeatures}
           </h2>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-            Discover the advanced capabilities that make PixelShrink the choice of professionals worldwide
+            {t.enterpriseFeaturesDesc}
           </p>
         </div>
 
@@ -135,10 +138,9 @@ const FeatureShowcase = () => {
       {/* Use Cases */}
       <div>
         <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold mb-4">Perfect for Every Professional</h2>
+          <h2 className="text-3xl font-bold mb-4">{t.perfectForProfessionals}</h2>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-            Whether you're building the next big app or managing social media campaigns, 
-            PixelShrink has the tools you need
+            {t.perfectForProfessionalsDesc}
           </p>
         </div>
 
@@ -170,18 +172,18 @@ const FeatureShowcase = () => {
       {/* Technology Stack */}
       <div className="glass-card p-8">
         <div className="text-center mb-8">
-          <h2 className="text-2xl font-bold mb-4">Built with Cutting-Edge Technology</h2>
+          <h2 className="text-2xl font-bold mb-4">{t.cuttingEdgeTechnology}</h2>
           <p className="text-muted-foreground max-w-2xl mx-auto">
-            Our compression engine leverages the latest web technologies for maximum performance and compatibility
+            {t.cuttingEdgeTechnologyDesc}
           </p>
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
           {[
-            { name: "WebAssembly", description: "Native performance" },
-            { name: "Canvas API", description: "Hardware acceleration" },
-            { name: "Web Workers", description: "Background processing" },
-            { name: "Progressive Web App", description: "Offline capability" }
+            { name: "WebAssembly", description: t.nativePerformance },
+            { name: "Canvas API", description: t.hardwareAcceleration },
+            { name: "Web Workers", description: t.backgroundProcessing },
+            { name: "Progressive Web App", description: t.offlineCapability }
           ].map((tech, index) => (
             <div key={index} className="text-center">
               <Badge variant="secondary" className="mb-2 bg-primary/10 text-primary">
