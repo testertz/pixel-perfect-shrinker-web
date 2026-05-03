@@ -122,7 +122,7 @@ const VideoCompressor: React.FC = () => {
     }
     // suppress unused warning
     void current;
-  }, [bitrateMbps, engine, muteAudio, quality, updateItem]);
+  }, [bitrateMbps, engine, mode, muteAudio, quality, targetUnit, targetValue, updateItem]);
 
   const startAll = useCallback(async () => {
     if (runningRef.current) return;
