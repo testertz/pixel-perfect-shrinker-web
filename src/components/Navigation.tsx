@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Menu, X, Download, Image, BarChart3, Clock, Info } from 'lucide-react';
+import { Menu, X, Download, Image, BarChart3, Clock, Info, Video } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { useLanguage } from '@/hooks/useLanguage';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
@@ -13,6 +13,7 @@ const Navigation = () => {
   const navItems = [
     { href: '/', label: t.home, icon: Image },
     { href: '/compressor', label: t.compress, icon: Download },
+    { href: '/video', label: t.video, icon: Video },
     { href: '/features', label: t.features, icon: BarChart3 },
     { href: '/history', label: t.history, icon: Clock },
     { href: '/about', label: t.about, icon: Info },

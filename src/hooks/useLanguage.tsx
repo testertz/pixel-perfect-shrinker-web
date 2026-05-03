@@ -135,6 +135,21 @@ interface Translations {
   hardwareAcceleration: string;
   backgroundProcessing: string;
   offlineCapability: string;
+
+  // Video Compressor
+  video: string;
+  videoCompressorTitle: string;
+  videoCompressorDesc: string;
+  uploadVideo: string;
+  dragDropVideo: string;
+  awaitingCompression: string;
+  qualityPreset: string;
+  qualityLow: string;
+  qualityMedium: string;
+  qualityHigh: string;
+  bitrate: string;
+  muteAudio: string;
+  processingLocally: string;
 }
 
 const translations: Record<Language, Translations> = {
@@ -271,6 +286,21 @@ const translations: Record<Language, Translations> = {
     hardwareAcceleration: 'Hardware acceleration',
     backgroundProcessing: 'Background processing',
     offlineCapability: 'Offline capability',
+
+    // Video Compressor
+    video: 'Video',
+    videoCompressorTitle: 'Compress Videos Securely in Your Browser',
+    videoCompressorDesc: 'Production-ready, fully client-side video compression. Your files never leave your device.',
+    uploadVideo: 'Upload Video',
+    dragDropVideo: 'Drag & drop your video here',
+    awaitingCompression: 'Awaiting compression',
+    qualityPreset: 'Quality Preset',
+    qualityLow: 'Low (360p)',
+    qualityMedium: 'Medium (720p)',
+    qualityHigh: 'High (1080p)',
+    bitrate: 'Video Bitrate',
+    muteAudio: 'Mute audio',
+    processingLocally: 'Processing locally — nothing is uploaded.',
   },
   sw: {
     // Navigation
@@ -405,6 +435,21 @@ const translations: Record<Language, Translations> = {
     hardwareAcceleration: 'Kuongeza kasi kwa maunzi',
     backgroundProcessing: 'Uchakataji wa nyuma',
     offlineCapability: 'Uwezo wa kufanya kazi bila mtandao',
+
+    // Video Compressor
+    video: 'Video',
+    videoCompressorTitle: 'Banua Video kwa Usalama Ndani ya Kivinjari Chako',
+    videoCompressorDesc: 'Kubanua video kwa kiwango cha uzalishaji, kunafanyika kwenye kifaa chako tu. Faili zako hazitoki kamwe.',
+    uploadVideo: 'Pakia Video',
+    dragDropVideo: 'Buruta na dondosha video yako hapa',
+    awaitingCompression: 'Inasubiri kubanua',
+    qualityPreset: 'Kiwango cha Ubora',
+    qualityLow: 'Chini (360p)',
+    qualityMedium: 'Wastani (720p)',
+    qualityHigh: 'Juu (1080p)',
+    bitrate: 'Bitrate ya Video',
+    muteAudio: 'Zima sauti',
+    processingLocally: 'Inachakatwa ndani ya kifaa — hakuna kinachopakiwa.',
   },
 };
 
