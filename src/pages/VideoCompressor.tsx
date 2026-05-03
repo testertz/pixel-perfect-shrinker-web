@@ -49,6 +49,9 @@ const VideoCompressor: React.FC = () => {
   const [quality, setQuality] = useState<VideoQualityPreset>('medium');
   const [muteAudio, setMuteAudio] = useState(false);
   const [bitrateMbps, setBitrateMbps] = useState<number>(1.5);
+  const [mode, setMode] = useState<'bitrate' | 'targetSize'>('bitrate');
+  const [targetValue, setTargetValue] = useState<number>(10);
+  const [targetUnit, setTargetUnit] = useState<'KB' | 'MB'>('MB');
   const [isRunning, setIsRunning] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const runningRef = useRef(false);
