@@ -95,6 +95,9 @@ const VideoCompressor: React.FC = () => {
     updateItem(id, { status: 'processing', progress: 0, phase: 'preparing', controller });
 
     try {
+      const targetBytes = mode === 'targetSize'
+        ? Math.max(1024, Math.round(targetValue * (targetUnit === 'MB' ? 1024 * 1024 : 1024)))
+        : undefined;
       const res = await engine.compress(
         snapshot.file,
         {
@@ -102,6 +105,7 @@ const VideoCompressor: React.FC = () => {
           videoBitrate: Math.round(bitrateMbps * 1_000_000),
           muteAudio,
           signal: controller.signal,
+          targetBytes,
         },
         (p: VideoCompressionProgress) => {
           updateItem(id, { progress: p.progress, phase: p.phase, message: p.message });
