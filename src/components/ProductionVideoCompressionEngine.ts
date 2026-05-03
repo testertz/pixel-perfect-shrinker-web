@@ -29,12 +29,20 @@ export interface VideoCompressionOptions {
   muteAudio?: boolean;
   /** Cancel via AbortSignal. */
   signal?: AbortSignal;
+  /** Target output size in bytes. When set, engine iteratively adjusts bitrate/resolution to fit. */
+  targetBytes?: number;
+  /** Tolerance (0..1) for target-size mode. Default 0.05 (±5%). */
+  targetTolerance?: number;
+  /** Max attempts for target-size mode. Default 4. */
+  maxAttempts?: number;
 }
 
 export interface VideoCompressionProgress {
   phase: 'validating' | 'preparing' | 'encoding' | 'finalizing' | 'done' | 'error';
   progress: number; // 0..100
   message?: string;
+  attempt?: number;
+  maxAttempts?: number;
 }
 
 export interface VideoCompressionResult {
@@ -93,7 +101,128 @@ export class ProductionVideoCompressionEngine {
     }
   }
 
+  /** Probe a video file to read duration and dimensions. */
+  static async probe(file: File): Promise<{ width: number; height: number; duration: number }> {
+    const url = URL.createObjectURL(file);
+    try {
+      const v = document.createElement('video');
+      v.src = url;
+      v.muted = true;
+      v.preload = 'metadata';
+      await new Promise<void>((resolve, reject) => {
+        v.addEventListener('loadedmetadata', () => resolve(), { once: true });
+        v.addEventListener('error', () => reject(new Error('Failed to read metadata')), { once: true });
+      });
+      return { width: v.videoWidth, height: v.videoHeight, duration: isFinite(v.duration) ? v.duration : 0 };
+    } finally {
+      URL.revokeObjectURL(url);
+    }
+  }
+
   async compress(
+    file: File,
+    options: VideoCompressionOptions = {},
+    onProgress?: (p: VideoCompressionProgress) => void,
+  ): Promise<VideoCompressionResult> {
+    // Target-size mode: iteratively adjust bitrate/resolution to fit a byte budget.
+    if (options.targetBytes && options.targetBytes > 0) {
+      return this._compressToTarget(file, options, onProgress);
+    }
+    return this._singlePass(file, options, onProgress);
+  }
+
+  private async _compressToTarget(
+    file: File,
+    options: VideoCompressionOptions,
+    onProgress?: (p: VideoCompressionProgress) => void,
+  ): Promise<VideoCompressionResult> {
+    const target = options.targetBytes!;
+    const tolerance = Math.max(0.01, Math.min(0.5, options.targetTolerance ?? 0.05));
+    const maxAttempts = Math.max(1, Math.min(8, options.maxAttempts ?? 4));
+
+    onProgress?.({ phase: 'preparing', progress: 2, message: `Probing video for target ${(target / 1024).toFixed(0)} KB` });
+    const meta = await ProductionVideoCompressionEngine.probe(file);
+    if (!meta.duration) throw new Error('Cannot determine video duration for target-size mode');
+
+    const preset = options.quality && options.quality !== 'custom'
+      ? PRESETS[options.quality]
+      : PRESETS.medium;
+    const baseAudio = options.muteAudio ? 0 : (options.audioBitrate ?? preset.audioBitrate);
+
+    // Initial estimate: total bits / duration, leave 5% container overhead.
+    const overhead = 0.95;
+    let videoBitrate = Math.max(80_000, Math.floor((target * 8 * overhead) / meta.duration) - baseAudio);
+    let maxWidth = options.maxWidth ?? preset.maxWidth;
+    let maxHeight = options.maxHeight ?? preset.maxHeight;
+
+    let best: VideoCompressionResult | null = null;
+    let lastErr: Error | null = null;
+
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      if (options.signal?.aborted) throw new Error('Compression aborted');
+
+      // Reduce resolution if bitrate is impractically low for current resolution.
+      // Heuristic: at least ~0.08 bits/pixel/frame at chosen FPS.
+      const fps = options.fps ?? preset.fps;
+      const minBpp = 0.08;
+      const maxPixels = Math.floor(videoBitrate / (fps * minBpp));
+      const aspect = meta.width / meta.height;
+      let scaledW = maxWidth;
+      let scaledH = maxHeight;
+      const targetPixels = Math.min(meta.width * meta.height, maxWidth * maxHeight);
+      if (targetPixels > maxPixels && maxPixels > 64 * 64) {
+        scaledH = Math.max(120, Math.floor(Math.sqrt(maxPixels / aspect) / 2) * 2);
+        scaledW = Math.max(160, Math.floor(scaledH * aspect / 2) * 2);
+      }
+
+      const attemptOpts: VideoCompressionOptions = {
+        ...options,
+        targetBytes: undefined,
+        videoBitrate,
+        audioBitrate: baseAudio,
+        maxWidth: scaledW,
+        maxHeight: scaledH,
+      };
+
+      try {
+        const res = await this._singlePass(file, attemptOpts, (p) => {
+          onProgress?.({
+            ...p,
+            attempt,
+            maxAttempts,
+            message: `Attempt ${attempt}/${maxAttempts} @ ${(videoBitrate / 1000).toFixed(0)} kbps · ${scaledW}×${scaledH} · ${p.message ?? ''}`.trim(),
+          });
+        });
+
+        // Track best result that is under or closest to target.
+        if (!best
+          || (res.compressedSize <= target && (best.compressedSize > target || res.compressedSize > best.compressedSize))
+          || (best.compressedSize > target && res.compressedSize < best.compressedSize)) {
+          if (best?.url) URL.revokeObjectURL(best.url);
+          best = res;
+        } else {
+          URL.revokeObjectURL(res.url);
+        }
+
+        const diff = (res.compressedSize - target) / target;
+        if (Math.abs(diff) <= tolerance) break;
+
+        // Adjust bitrate proportionally for next attempt.
+        const ratio = target / Math.max(1, res.compressedSize);
+        // Apply a damping factor to converge without overshoot.
+        videoBitrate = Math.max(60_000, Math.floor(videoBitrate * (0.5 + 0.5 * ratio)));
+      } catch (err: any) {
+        lastErr = err;
+        break;
+      }
+    }
+
+    if (!best) throw lastErr || new Error('Target-size compression failed');
+    onProgress?.({ phase: 'done', progress: 100, message: 'Done' });
+    return best;
+  }
+
+  private async _singlePass(
     file: File,
     options: VideoCompressionOptions = {},
     onProgress?: (p: VideoCompressionProgress) => void,

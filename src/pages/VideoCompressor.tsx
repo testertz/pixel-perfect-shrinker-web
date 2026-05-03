@@ -49,6 +49,9 @@ const VideoCompressor: React.FC = () => {
   const [quality, setQuality] = useState<VideoQualityPreset>('medium');
   const [muteAudio, setMuteAudio] = useState(false);
   const [bitrateMbps, setBitrateMbps] = useState<number>(1.5);
+  const [mode, setMode] = useState<'bitrate' | 'targetSize'>('bitrate');
+  const [targetValue, setTargetValue] = useState<number>(10);
+  const [targetUnit, setTargetUnit] = useState<'KB' | 'MB'>('MB');
   const [isRunning, setIsRunning] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const runningRef = useRef(false);
@@ -92,6 +95,9 @@ const VideoCompressor: React.FC = () => {
     updateItem(id, { status: 'processing', progress: 0, phase: 'preparing', controller });
 
     try {
+      const targetBytes = mode === 'targetSize'
+        ? Math.max(1024, Math.round(targetValue * (targetUnit === 'MB' ? 1024 * 1024 : 1024)))
+        : undefined;
       const res = await engine.compress(
         snapshot.file,
         {
@@ -99,6 +105,7 @@ const VideoCompressor: React.FC = () => {
           videoBitrate: Math.round(bitrateMbps * 1_000_000),
           muteAudio,
           signal: controller.signal,
+          targetBytes,
         },
         (p: VideoCompressionProgress) => {
           updateItem(id, { progress: p.progress, phase: p.phase, message: p.message });
@@ -115,7 +122,7 @@ const VideoCompressor: React.FC = () => {
     }
     // suppress unused warning
     void current;
-  }, [bitrateMbps, engine, muteAudio, quality, updateItem]);
+  }, [bitrateMbps, engine, mode, muteAudio, quality, targetUnit, targetValue, updateItem]);
 
   const startAll = useCallback(async () => {
     if (runningRef.current) return;
@@ -233,7 +240,17 @@ const VideoCompressor: React.FC = () => {
               />
             </div>
 
-            <div className="grid md:grid-cols-3 gap-4">
+            <div className="grid md:grid-cols-2 gap-4">
+              <div>
+                <Label className="text-sm">Compression mode</Label>
+                <Select value={mode} onValueChange={(v) => setMode(v as 'bitrate' | 'targetSize')}>
+                  <SelectTrigger className="mt-2"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="bitrate">Bitrate / quality</SelectItem>
+                    <SelectItem value="targetSize">Target file size</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
               <div>
                 <Label className="text-sm">{t.qualityPreset}</Label>
                 <Select value={quality} onValueChange={(v) => setQuality(v as VideoQualityPreset)}>
@@ -245,17 +262,46 @@ const VideoCompressor: React.FC = () => {
                   </SelectContent>
                 </Select>
               </div>
-              <div>
-                <Label className="text-sm">{t.bitrate}: {bitrateMbps.toFixed(1)} Mbps</Label>
-                <Slider
-                  className="mt-3"
-                  min={0.2}
-                  max={8}
-                  step={0.1}
-                  value={[bitrateMbps]}
-                  onValueChange={(v) => setBitrateMbps(v[0])}
-                />
-              </div>
+            </div>
+
+            <div className="grid md:grid-cols-3 gap-4">
+              {mode === 'bitrate' ? (
+                <div className="md:col-span-2">
+                  <Label className="text-sm">{t.bitrate}: {bitrateMbps.toFixed(1)} Mbps</Label>
+                  <Slider
+                    className="mt-3"
+                    min={0.2}
+                    max={8}
+                    step={0.1}
+                    value={[bitrateMbps]}
+                    onValueChange={(v) => setBitrateMbps(v[0])}
+                  />
+                </div>
+              ) : (
+                <div className="md:col-span-2">
+                  <Label className="text-sm">Target file size</Label>
+                  <div className="flex gap-2 mt-2">
+                    <input
+                      type="number"
+                      min={1}
+                      step={1}
+                      value={targetValue}
+                      onChange={(e) => setTargetValue(Math.max(1, Number(e.target.value) || 1))}
+                      className="flex-1 h-10 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                    />
+                    <Select value={targetUnit} onValueChange={(v) => setTargetUnit(v as 'KB' | 'MB')}>
+                      <SelectTrigger className="w-24"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="KB">KB</SelectItem>
+                        <SelectItem value="MB">MB</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Engine will iterate (up to 4 attempts) adjusting bitrate &amp; resolution to fit ±5%.
+                  </p>
+                </div>
+              )}
               <div className="flex items-center gap-3 pt-6">
                 <Switch checked={muteAudio} onCheckedChange={setMuteAudio} id="mute" />
                 <Label htmlFor="mute" className="text-sm">{t.muteAudio}</Label>
