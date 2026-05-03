@@ -29,12 +29,20 @@ export interface VideoCompressionOptions {
   muteAudio?: boolean;
   /** Cancel via AbortSignal. */
   signal?: AbortSignal;
+  /** Target output size in bytes. When set, engine iteratively adjusts bitrate/resolution to fit. */
+  targetBytes?: number;
+  /** Tolerance (0..1) for target-size mode. Default 0.05 (±5%). */
+  targetTolerance?: number;
+  /** Max attempts for target-size mode. Default 4. */
+  maxAttempts?: number;
 }
 
 export interface VideoCompressionProgress {
   phase: 'validating' | 'preparing' | 'encoding' | 'finalizing' | 'done' | 'error';
   progress: number; // 0..100
   message?: string;
+  attempt?: number;
+  maxAttempts?: number;
 }
 
 export interface VideoCompressionResult {
